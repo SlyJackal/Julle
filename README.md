@@ -1,1 +1,2 @@
 # Julle
+Price monitoring service
