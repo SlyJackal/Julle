@@ -1,7 +1,11 @@
 import requests
 import json
+from dotenv import load_dotenv
+from db_write import data_writer
 
-def get_data(data_list: list, page_number: int):
+
+
+def get_data(page_number: int):
 
     cookies = {
         'ngenix_jscv_2198e54375cc': 'cookie_expires=1703435928&bot_profile_check=true&cookie_signature=a6vNFIOs6Li6sBEc7k4qeEZhJbM%3D',
@@ -80,21 +84,24 @@ def get_data(data_list: list, page_number: int):
 
     response = requests.post('https://goldapple.ru/front/api/catalog/products', cookies=cookies, headers=headers, json=json_data).json()
     data_request = response.get('data').get('products')
-    print(data_request)
     #print(data_request)
-    if data_request:
-        for i in data_request:
-            data_set = dict()
-            data_set['itemID'] = i.get('itemId')
-            data_set['price'] = i.get('price').get('actual').get('amount')
-            data_set['url'] = i.get('url')
-            data_list.append(data_set)
-        #print(data_set)
+    for i in data_request:
+        itemid = i.get('itemId')
+        price = i.get('price').get('actual').get('amount')
+        url = i.get('url')
+        brand = i.get('brand')
+        product_name =i.get('name')
+        size = i.get('attributes').get('units').get('currentUnitValue').replace(',', '.')
+        if size == '':
+            size = '0'
+        units = i.get('attributes').get('units').get('name')
+        if units == '':
+            units = 'miss_data'
+        data_write = data_writer('goldapple', itemid, price, url, brand, product_name, size, units)
+        data_write.connection()
+        data_write.write()
 
-        return data_list
-    else:
-        #print(data_request)
-        return data_list
+
 
 
     # Note: json_data will not be serialized by requests
@@ -103,18 +110,11 @@ def get_data(data_list: list, page_number: int):
     #response = requests.post('https://goldapple.ru/front/api/catalog/products', cookies=cookies, headers=headers, data=data)
 
 def main():
-    
-    data_list = json.load(open('data_set.json'))
+    # import .env
+    load_dotenv()
     for i in range (1, 25):
-        print(i)
-        get_data(data_list, i)
+        get_data(i)
 
-        
-        
-
-
-    with open('data_set.json', 'w') as file:
-        json.dump(data_list, file, indent=4, ensure_ascii=False)
 if __name__ == '__main__':
     main()
 
